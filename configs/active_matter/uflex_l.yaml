@@ -1,0 +1,19 @@
+# UFlex-L · The Well · active_matter (2D, 256x256, 11 fields)
+#   python train.py --config configs/active_matter/uflex_l.yaml
+# Same data and optimization settings as uflex_b.yaml; only the model size differs.
+
+base_config: uflex_b.yaml
+tags: [active_matter, uflex_l]
+
+model:
+  patch_size: [8, 8]
+  depth: 2
+  depth_res: 3
+  depth_middle: 4
+  heads: [12, 16]
+  heads_middle: 24
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 3
+  dropout: false
+  drop_path: 0.0

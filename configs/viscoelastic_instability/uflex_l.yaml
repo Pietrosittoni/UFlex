@@ -1,0 +1,19 @@
+# UFlex-L · The Well · viscoelastic_instability (2D, 512x512, 8 fields)
+#   python train.py --config configs/viscoelastic_instability/uflex_l.yaml
+# Same data and optimization settings as uflex_b.yaml; only the model size differs.
+
+base_config: uflex_b.yaml
+tags: [viscoelastic_instability, uflex_l]
+
+model:
+  patch_size: [8, 8]
+  depth: 2
+  depth_res: 3
+  depth_middle: 4
+  heads: [12, 16]
+  heads_middle: 24
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 5
+  dropout: false
+  drop_path: 0.0

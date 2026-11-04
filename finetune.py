@@ -5,7 +5,7 @@ and output projection (which depend on the data's channels) are trained from scr
 The backbone keeps a constant learning rate ``lr`` while the projections follow a cosine
 schedule from ``projection_lr`` to ``projection_lr_min``.
 
-    python finetune.py --config configs/cns_3d_finetune/uflex.yaml
+    python finetune.py --config configs/cns_3d_finetune/uflex_b.yaml
 """
 
 import argparse
@@ -16,7 +16,7 @@ import wandb
 
 from uflex.config import Config
 from uflex.data import build_dataloaders
-from uflex.engine import FieldTransform, evaluate_rollout
+from uflex.engine import FieldTransform, errors_at_horizons, evaluate_rollout
 from uflex.experiment import (
     PROJECTION_PREFIXES, build_model, build_optimizer, fit, init_wandb, load_backbone, save_checkpoint, set_seed,
 )
@@ -53,7 +53,8 @@ def main(config: Config) -> None:
         num_parameters=config.model.get("num_parameters", 0), device=config.device,
         error_space=config.get("rollout_error_space", "normalized"),
     )
-    print(f"Rollout relative L2 (mean over {len(errors)} steps): {errors.mean():.4f}")
+    report = ", ".join(f"TE({100 * f:.0f}%) {e:.3f}" for f, e in errors_at_horizons(errors).items())
+    print(f"Rollout test error over {len(errors)} steps: {report}")
 
     save_checkpoint(model, config)
     wandb.finish()

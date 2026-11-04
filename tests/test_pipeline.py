@@ -8,7 +8,7 @@ import torch
 
 from uflex import UFlex
 from uflex.config import Config
-from uflex.engine import FieldTransform, relative_l2, rollout
+from uflex.engine import FieldTransform, errors_at_horizons, relative_l2, rollout
 
 CONFIGS = sorted(glob.glob(os.path.join(os.path.dirname(__file__), "..", "configs", "*", "*.yaml")))
 
@@ -26,6 +26,13 @@ def test_relative_l2():
     prediction[:, 1] *= 1.5
     assert relative_l2(target, target).item() == pytest.approx(0.0, abs=1e-6)
     torch.testing.assert_close(relative_l2(prediction, target, per_frame=True), torch.tensor([0.0, 0.5, 0.0]))
+
+
+def test_errors_at_horizons():
+    errors = torch.arange(1.0, 11.0)  # steps 1..10
+    te = errors_at_horizons(errors, fractions=(0.3, 1.0))
+    assert te[0.3] == pytest.approx(2.0)   # mean of the first 3 steps
+    assert te[1.0] == pytest.approx(5.5)   # mean of all 10 steps
 
 
 def test_rollout_uses_a_sliding_window():

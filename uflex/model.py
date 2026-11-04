@@ -1,4 +1,7 @@
-"""UFlex: a U-Net of transformer stages for autoregressive surrogate modeling of PDEs.
+"""UFlex: an attention-based U-Net neural physics simulator operating on a 1D token sequence.
+
+Reference: P. Sittoni and F. Tudisco, "Simplifying Transformer-Based U-Net Neural Physics
+Simulators", NeurIPS 2026.
 
 Overview of one forward pass::
 
@@ -48,6 +51,9 @@ def split_tokens(x: torch.Tensor, factor: int) -> torch.Tensor:
 
 class UFlex(nn.Module):
     """UFlex model.
+
+    The defaults correspond to UFlex-B from the paper (123M parameters); UFlex-S uses
+    ``heads=(6, 8), heads_middle=12``.
 
     Args:
         in_channels: Number of physical fields in the input.

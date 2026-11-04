@@ -1,25 +1,25 @@
-# UFlex · The Well · planetswe (2D, 256x512, 3 fields) · small model
-#   python train.py --config configs/planetswe/uflex_small.yaml
+# UFlex-B · The Well · viscoelastic_instability (2D, 512x512, 8 fields)
+#   python train.py --config configs/viscoelastic_instability/uflex_b.yaml
 
 # Experiment
-seed: 42
+seed: 40
 device: "cuda:0"
 wandb_project: UFlex
 wandb_entity: null             # your W&B team; null uses your default entity
-tags: [planetswe]
+tags: [viscoelastic_instability]
 output_dir: checkpoints        # checkpoints go to <output_dir>/<run name>/
 
 # Data
-dataset_name: "planetswe"
+dataset_name: "viscoelastic_instability"
 data_path: "data/the_well/datasets"
 input_steps: 1                 # input frames given to the model
-rollout_steps: 200             # length of the evaluation rollout
-stride: 5                      # temporal stride between frames
+rollout_steps: 19              # length of the evaluation rollout
+stride: 1                      # temporal stride between frames
 rollout_error_space: normalized  # rollout error on normalized or physical fields
 
 # Per-channel normalization statistics of the training set
-mean: [-73.223, -0.0070098, 0.87755]
-std: [305.509, 6.912, 13.637]
+mean: [-5.046783189754933e-05, 0.5607505440711975, 0.9980437159538269, -3.536998960385063e-08, 1956.663330078125, -0.19976994395256042, -0.19976994395256042, 9.687799453735352]
+std: [0.006768897641450167, 0.21604527533054352, 0.4116479456424713, 0.010481431148946285, 1196.4156494140625, 146.94854736328125, 146.94854736328125, 32.90073013305664]
 log_scale: true                # symmetric log transform after normalization
 
 # Model (keyword arguments of uflex.UFlex; channels and resolution are read from the data)
@@ -28,18 +28,18 @@ model:
   depth: 2
   depth_res: 2
   depth_middle: 2
-  heads: [4, 8]
-  heads_middle: 12
+  heads: [8, 12]
+  heads_middle: 18
   dim_head: 64
   downsampling_factor: 4
-  num_parameters: 0
+  num_parameters: 5
   dropout: false
   drop_path: 0.0
 
 # Optimization
-epochs: 5
-batch_size: 32
-accumulation_steps: 1
+epochs: 25
+batch_size: 16
+accumulation_steps: 2
 lr: 5.0e-04
 learning_rate_min: 1.0e-06
 weight_decay: 0.0

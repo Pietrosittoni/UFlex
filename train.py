@@ -1,6 +1,6 @@
 """Train UFlex as an autoregressive one-step predictor, then evaluate full rollouts.
 
-    python train.py --config configs/active_matter/uflex.yaml
+    python train.py --config configs/active_matter/uflex_b.yaml
 """
 
 import argparse
@@ -9,7 +9,7 @@ import wandb
 
 from uflex.config import Config
 from uflex.data import build_dataloaders
-from uflex.engine import FieldTransform, evaluate_rollout
+from uflex.engine import FieldTransform, errors_at_horizons, evaluate_rollout
 from uflex.experiment import build_model, build_optimizer, build_scheduler, fit, init_wandb, save_checkpoint, set_seed
 
 
@@ -29,7 +29,8 @@ def main(config: Config) -> None:
         num_parameters=config.model.get("num_parameters", 0), device=config.device,
         error_space=config.get("rollout_error_space", "normalized"),
     )
-    print(f"Rollout relative L2 (mean over {len(errors)} steps): {errors.mean():.4f}")
+    report = ", ".join(f"TE({100 * f:.0f}%) {e:.3f}" for f, e in errors_at_horizons(errors).items())
+    print(f"Rollout test error over {len(errors)} steps: {report}")
 
     save_checkpoint(model, config)
     wandb.finish()

@@ -3,7 +3,7 @@
 Examples: the state of active_matter after a fixed horizon from its initial condition,
 or the DiffusionPDE coefficient -> solution problems (darcy, helmholtz, ...).
 
-    python train_steady_state.py --config configs/active_matter_steady/uflex.yaml
+    python train_steady_state.py --config configs/active_matter_steady/uflex_b.yaml
 """
 
 import argparse

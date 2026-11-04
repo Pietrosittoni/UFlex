@@ -1,6 +1,6 @@
 """Measure the parameter count, FLOPs, inference throughput, and training/inference cost of UFlex.
 
-    python benchmark.py --config configs/active_matter/uflex.yaml --input-shape 1 256 256 11
+    python benchmark.py --config configs/active_matter/uflex_b.yaml --input-shape 1 256 256 11
 
 ``--input-shape`` is one sample without the batch axis: (T, *spatial, C).
 """

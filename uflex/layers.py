@@ -88,7 +88,11 @@ class FeedForward(nn.Module):
 
 
 class ConditionedTransformerBlock(nn.Module):
-    """Pre-norm transformer block whose norms are modulated by a conditioning vector (adaLN-Zero style)."""
+    """Pre-norm Transformer block with adaRMSN-Zero conditioning.
+
+    As adaLN-Zero (DiT) but with RMSNorm: the conditioning vector c produces a shift, a scale
+    and an output gate for the attention branch and for the MLP branch (six vectors in total).
+    """
 
     def __init__(self, dim: int, heads: int, dim_head: int, dropout: bool = False, drop_path: float = 0.0):
         super().__init__()

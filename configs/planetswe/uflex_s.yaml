@@ -1,0 +1,19 @@
+# UFlex-S · The Well · planetswe (2D, 256x512, 3 fields)
+#   python train.py --config configs/planetswe/uflex_s.yaml
+# Same data and optimization settings as uflex_b.yaml; only the model size differs.
+
+base_config: uflex_b.yaml
+tags: [planetswe, uflex_s]
+
+model:
+  patch_size: [8, 8]
+  depth: 2
+  depth_res: 2
+  depth_middle: 2
+  heads: [6, 8]
+  heads_middle: 12
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 0
+  dropout: false
+  drop_path: 0.0

@@ -144,6 +144,15 @@ def rollout(model: nn.Module, x: torch.Tensor, parameters: torch.Tensor, num_ste
     return torch.cat(predictions, dim=1)
 
 
+PAPER_HORIZONS = (0.30, 0.45, 0.60, 0.75, 0.90, 1.00)
+
+
+def errors_at_horizons(error_per_step: torch.Tensor, fractions: Sequence[float] = PAPER_HORIZONS) -> Dict[float, float]:
+    """Test error "TE (p%)" of the paper: the mean rollout error over the first p% of the horizon."""
+    steps = len(error_per_step)
+    return {f: error_per_step[: max(1, round(f * steps))].mean().item() for f in fractions}
+
+
 @torch.no_grad()
 def evaluate_rollout(
     model: nn.Module,
@@ -179,6 +188,7 @@ def evaluate_rollout(
 
     error_per_step = error_per_step / len(loader)
     log({"val_rollout/Relative_l2": error_per_step.mean().item()})
+    log({f"val_rollout/TE_{round(100 * f)}": e for f, e in errors_at_horizons(error_per_step).items()})
     if wandb.run is not None:
         table = wandb.Table(data=[[t, e] for t, e in enumerate(error_per_step.tolist())], columns=["Time", "Relative_l2"])
         wandb.log({"val_rollout/error_vs_time": wandb.plot.line(table, "Time", "Relative_l2", title="Relative_l2 vs Time (rollout)")})

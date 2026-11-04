@@ -1,0 +1,59 @@
+# UFlex-B · PDEBench · 3D compressible Navier-Stokes, fine-tuning with 4 input frames (64^3, 5 fields)
+#   python finetune.py --config configs/cns_3d_finetune/uflex_b.yaml
+
+# Experiment
+seed: 42
+device: "cuda:0"
+wandb_project: UFlex
+wandb_entity: null             # your W&B team; null uses your default entity
+tags: [cns_3d_finetune, finetune]
+output_dir: checkpoints        # checkpoints go to <output_dir>/<run name>/
+
+# Fine-tuning: backbone from a pretrained checkpoint, new patch embedding / output projection
+pretrained_checkpoint: checkpoints/<pretrained-run>/model.pt
+projection_lr: 1.0e-4
+projection_lr_min: 1.0e-5
+
+# Data
+dataset_name: "CNS3d"
+data_path: "data/pdebench/3D/Train"
+input_steps: 4                 # input frames given to the model
+rollout_steps: 17              # length of the evaluation rollout
+stride: 1                      # temporal stride between frames
+rollout_error_space: physical  # rollout error on normalized or physical fields
+
+# Per-channel normalization statistics of the training set
+mean: [0.000782568589784205, -0.0015041523147374392, 0.12451086938381195, 4.9097208976745605, 27.693815231323242]
+std: [0.6050273776054382, 0.6062456369400024, 0.6269024610519409, 3.03236722946167, 26.608625411987305]
+log_scale: false               # symmetric log transform after normalization
+
+# Model (keyword arguments of uflex.UFlex; channels and resolution are read from the data)
+model:
+  patch_size: [8, 8, 8]
+  depth: 2
+  depth_res: 2
+  depth_middle: 2
+  heads: [8, 12]
+  heads_middle: 18
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 0
+  time_patch_size: 2
+  dropout: false
+  drop_path: 0.0
+  normalize_input: true
+
+# Optimization
+epochs: 10
+batch_size: 16
+accumulation_steps: 2
+lr: 5.0e-04
+learning_rate_min: 1.0e-06
+weight_decay: 0.0
+warmup_steps: 1000
+beta1: 0.9
+beta2: 0.95
+mixed_precision: true          # bfloat16 autocast
+compile: false
+ema_decay: 0.998               # null disables the weight EMA
+val_interval: 1                # validate every N epochs

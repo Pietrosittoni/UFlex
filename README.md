@@ -1,51 +1,52 @@
-# UFlex
+# Simplifying Transformer-Based U-Net Neural Physics Simulators
 
-Official PyTorch implementation of **UFlex** from the paper *&lt;Paper title&gt;*.
+**Pietro Sittoni**<sup>1</sup>, **Francesco Tudisco**<sup>1,2,3</sup>
 
-[**Paper**](#) | [**Citation**](#citation)
+<sup>1</sup>Gran Sasso Science Institute, L'Aquila, Italy &nbsp; <sup>2</sup>University of Edinburgh, UK &nbsp; <sup>3</sup>Miniml.AI
 
-UFlex is a U-Net built entirely from transformer stages, designed as a neural surrogate for time-dependent PDEs. A single implementation handles 1D, 2D and 3D data, any resolution, any number of input frames, and conditioning on scalar physical parameters.
+*NeurIPS 2026* · [**Citation**](#citation)
+<!-- TODO: add the arXiv / OpenReview link once available. -->
+
+Official PyTorch implementation of **UFlex**, an attention-based U-Net for neural physics simulation. Its Transformer blocks stay close to the standard design: multi-head self-attention with RoPE, RMSNorm, a SwiGLU MLP and residual connections. They operate on a one-dimensional token sequence, so the same architecture applies to 1D, 2D, 3D and spatiotemporal regular-grid problems without design changes. UFlex reaches state-of-the-art accuracy on seven benchmarks from The Well and PDEBench, at resolutions up to 512 × 512 in 2D and 256 × 128 × 256 in 3D, while using less training memory and time than state-of-the-art Transformer baselines.
 
 <p align="center">
-<em>&lt;architecture figure&gt;</em>
+  <img src="assets/uflex_architecture.png" width="100%" alt="UFlex architecture">
 </p>
+<p align="center"><em>Left: the UFlex U-Net (TF Blocks = Transformer blocks). Right: one Transformer block with adaRMSN-Zero conditioning.</em></p>
 
 ## Highlights
 
-- **Transformer U-Net.** The encoder merges groups of neighbouring tokens into fewer, wider tokens at each level. The decoder splits them back and adds skip connections. Every stage is a stack of adaLN-conditioned transformer blocks with rotary position embeddings and SwiGLU feed-forward layers.
-- **Shape-agnostic.** Resolution, number of input frames and 2D vs. 3D come from the input tensor; nothing about the data shape is hard-coded in the model. Channel counts are read from the dataset when the model is built.
+- **A U-Net on a 1D token sequence.** The state is cut into patches and flattened into one token sequence. Downsampling is a learnable linear map that merges `f = 4` consecutive tokens into one; upsampling is a learnable linear map that expands each token back into `f` tokens. Encoder and decoder features at the same scale are added through skip connections.
+- **Standard Transformer blocks.** Multi-head self-attention with RoPE, a SwiGLU MLP and RMSNorm pre-normalization. There are no windowed, axial or Fourier attention layers.
+- **Physics conditioning (adaRMSN-Zero).** Each scalar parameter (Mach number, Atwood number, viscosity, ...) is embedded by a small MLP. The embeddings are summed and modulate every block, as in adaLN-Zero but with RMSNorm.
+- **One model for every dimensionality.** Resolution, number of input frames and 2D vs. 3D come from the input tensor. Temporal context is folded into the patches (`time_patch_size` frames per token), and a model trained in 2D can be fine-tuned directly in 3D.
 - **Causal in time, global in space.** With several input frames, each token attends to every token of its own frame and of all earlier frames, never to later ones. With a single frame this is ordinary full attention.
-- **Physics conditioning.** Scalar parameters (Reynolds, Mach or Atwood numbers, ...) are embedded and modulate every block.
 
-```
-fields (B, T, *spatial, C)
-  │ patchify + linear embedding                    tokens (B, T·P, d₀), ordered frame by frame
-  ├─ level 0: transformer ─────────────────────────────── skip ──┐
-  │  merge ×f                                                    │
-  ├─ level 1: transformer ─────────────────────── skip ──┐       │
-  │  merge ×f                                            │       │
-  ├─ middle: transformer                                 │       │
-  │  split ×f ── + ──────────────────────────────────────┘       │
-  ├─ level 1: transformer                                        │
-  │  split ×f ── + ──────────────────────────────────────────────┘
-  ├─ level 0: transformer
-  │ linear projection + unpatchify
-next frame (B, 1, *spatial, C_out)
-```
+## Results
+
+Test error (nRMSE of the autoregressive rollout over the first 30% of the temporal horizon) of UFlex-B compared with the best baseline on each dataset. Lower is better; see the paper for all baselines, efficiency metrics and longer horizons.
+
+| | Active Matter | Planetswe | Viscoelastic Inst. | Comp. NS 2D | Comp. NS 3D | Rayleigh–Taylor | Conv. Envelope RSG |
+|---|---|---|---|---|---|---|---|
+| Resolution | 256² | 256 × 512 | 512² | 512² | 64³ | 128³ | 256 × 128 × 256 |
+| Best baseline | 0.459 (MPP) | 0.300 (Poseidon) | **0.091** (DPOT) | 0.091 (MPP) | 0.219 (DPOT) | 0.075 (U-Net) | 0.315 (U-Net) |
+| **UFlex-B** | **0.343** | **0.243** | 0.100 | **0.087** | **0.197** | **0.040** | **0.256** |
+
+UFlex-B also has the lowest training memory and the fastest training step of all compared models wherever these were measured (single A100).
 
 ## Repository structure
 
 ```
 uflex/
   model.py              UFlex model
-  layers.py             attention with the block-causal mask, SwiGLU, adaLN transformer stages, parameter embedder
+  layers.py             attention with the block-causal mask, SwiGLU MLP, adaRMSN-Zero Transformer stages
   engine.py             one-step training, validation and autoregressive rollout evaluation
   experiment.py         seeding, optimizer and schedule, epoch loop, checkpoints
-  data/                 The Well, PDEBench compressible Navier–Stokes and steady-state datasets
-configs/<benchmark>/    one YAML file per experiment
+  data/                 The Well, PDEBench compressible Navier–Stokes and static-prediction datasets
+configs/<benchmark>/    uflex_s.yaml, uflex_b.yaml, uflex_l.yaml
 train.py                autoregressive training + rollout evaluation
-finetune.py             fine-tuning from a pretrained backbone
-train_steady_state.py   steady-state (input state -> output state) training
+finetune.py             2D -> 3D transfer: fine-tuning from a pretrained backbone
+train_steady_state.py   static prediction (input state -> target state)
 plot_rollout.py         plot a rollout against the reference
 benchmark.py            parameters, FLOPs, throughput, memory
 scripts/                dataset download helpers
@@ -87,33 +88,35 @@ scripts/download_diffusionpde.sh data/diffusionpde darcy helmholtz
 ## Training
 
 ```bash
-python train.py --config configs/active_matter/uflex.yaml
+python train.py --config configs/active_matter/uflex_b.yaml
 ```
 
-Training minimizes the one-step MSE on normalized fields. It uses AdamW, a linear warm-up followed by cosine decay, bfloat16 mixed precision and an EMA of the weights. At the end, `train.py` rolls the model out autoregressively on the test trajectories and reports the relative L2 error per step. It then saves `checkpoints/<run>/model.pt` together with the resolved `config.yaml`. Metrics are logged to Weights & Biases; set `WANDB_MODE=disabled` to turn logging off.
+Every benchmark folder holds one config per model size: `uflex_s.yaml`, `uflex_b.yaml` and `uflex_l.yaml`. UFlex-B is the model behind the main results, and the S and L configs inherit all data and optimization settings from it. Batch sizes, gradient accumulation and epochs follow Table 4 of the paper.
 
-| Config | Data | Dim. | Resolution | Fields | Physical parameters |
-|---|---|---|---|---|---|
-| `configs/active_matter/uflex.yaml` | The Well · active_matter | 2D | 256 × 256 | 11 | 3 |
-| `configs/planetswe/uflex.yaml` | The Well · planetswe | 2D | 256 × 512 | 3 | – |
-| `configs/viscoelastic_instability/uflex.yaml` | The Well · viscoelastic_instability | 2D | 512 × 512 | 8 | 5 |
-| `configs/cns_2d/uflex.yaml` | PDEBench · compressible Navier–Stokes | 2D | 512 × 512 | 4 | 1 |
-| `configs/rayleigh_taylor_instability/uflex.yaml` | The Well · rayleigh_taylor_instability | 3D | 128³ | 4 | 1 |
-| `configs/convective_envelope_rsg/uflex.yaml` | The Well · convective_envelope_rsg | 3D | 256 × 128 × 256 | 6 | – |
-| `configs/cns_3d/uflex.yaml` | PDEBench · compressible Navier–Stokes | 3D | 64³ | 5 | – |
+Training minimizes the one-step MSE on normalized fields. It uses AdamW (β₂ = 0.95, no weight decay) and a 1000-step linear warm-up to 5·10⁻⁴ followed by cosine decay to 10⁻⁶. It also uses bfloat16 mixed precision, gradient clipping at norm 1 and an EMA of the weights with decay 0.998.
 
-`uflex_small.yaml` variants are provided for active_matter and planetswe.
+At the end, `train.py` rolls the model out autoregressively on the test trajectories. It reports the test error over the first 30/45/60/75/90/100% of the horizon (TE in the paper) and saves `checkpoints/<run>/model.pt` with the resolved `config.yaml`. Metrics are logged to Weights & Biases; set `WANDB_MODE=disabled` to turn logging off.
 
-**Fine-tuning.** `finetune.py` initializes the backbone from `pretrained_checkpoint` and trains new input/output projections. The example config fine-tunes on 3D compressible Navier–Stokes with 4 input frames, so attention is causal in time:
+| Benchmark (`configs/…`) | Data | Dim. | Resolution | Fields | Physical parameters | Input frames |
+|---|---|---|---|---|---|---|
+| `active_matter` | The Well · active_matter | 2D | 256 × 256 | 11 | 3 | 1 |
+| `planetswe` | The Well · planetswe | 2D | 256 × 512 | 3 | – | 1 |
+| `viscoelastic_instability` | The Well · viscoelastic_instability | 2D | 512 × 512 | 8 | 5 | 1 |
+| `cns_2d` | PDEBench · compressible Navier–Stokes | 2D | 512 × 512 | 4 | 1 | 1 |
+| `cns_3d` | PDEBench · compressible Navier–Stokes | 3D | 64³ | 5 | – | 4 |
+| `rayleigh_taylor_instability` | The Well · rayleigh_taylor_instability | 3D | 128³ | 4 | 1 | 1 |
+| `convective_envelope_rsg` | The Well · convective_envelope_rsg | 3D | 256 × 128 × 256 | 6 | – | 1 |
+
+**Transfer from 2D to 3D.** `finetune.py` initializes the backbone from a 2D checkpoint (`pretrained_checkpoint`) and trains new input/output projections. Its example config fine-tunes UFlex-B on 3D compressible Navier–Stokes for 10 epochs (Table 2 of the paper):
 
 ```bash
-python finetune.py --config configs/cns_3d_finetune/uflex.yaml
+python finetune.py --config configs/cns_3d_finetune/uflex_b.yaml
 ```
 
-**Steady state.** Learn a direct map from one state to another, for example from the initial condition of active_matter to its state `horizon` steps later:
+**Static prediction.** Learn a direct map from one state to another, for example from the initial condition of active_matter to its tenth time step (Section G.4):
 
 ```bash
-python train_steady_state.py --config configs/active_matter_steady/uflex.yaml
+python train_steady_state.py --config configs/active_matter_steady/uflex_b.yaml
 ```
 
 ## Evaluation
@@ -121,13 +124,13 @@ python train_steady_state.py --config configs/active_matter_steady/uflex.yaml
 Plot a rollout against the reference trajectory for one field:
 
 ```bash
-python plot_rollout.py --config configs/planetswe/uflex.yaml --checkpoint checkpoints/<run>/model.pt --channel 0
+python plot_rollout.py --config configs/planetswe/uflex_b.yaml --checkpoint checkpoints/<run>/model.pt --channel 0
 ```
 
 Measure the model's cost on an input shape `(T, *spatial, C)`:
 
 ```bash
-python benchmark.py --config configs/active_matter/uflex.yaml --input-shape 1 256 256 11
+python benchmark.py --config configs/active_matter/uflex_b.yaml --input-shape 1 256 256 11
 ```
 
 ## Using UFlex in your own code
@@ -147,6 +150,14 @@ x = torch.randn(2, 4, 256, 256, 4)       # (batch, input frames, H, W, fields)
 mach = torch.tensor([[0.1], [1.0]])      # (batch, num_parameters)
 next_frame = model(x, mach)              # (2, 1, 256, 256, 4)
 ```
+
+**Model sizes from the paper.** All sizes use `dim_head = 64`, `downsampling_factor = 4` and patch size 8 (16 × 8 × 16 on Convective Envelope RSG). Parameter counts are for Planetswe; they vary slightly with the number of fields.
+
+| Size | `heads` | `heads_middle` | `depth_res` | `depth_middle` | Parameters |
+|---|---|---|---|---|---|
+| UFlex-S | `[6, 8]` | 12 | 2 | 2 | 58M |
+| UFlex-B | `[8, 12]` | 18 | 2 | 2 | 124M |
+| UFlex-L | `[12, 16]` | 24 | 3 | 4 | 374M |
 
 <details>
 <summary><b>Model arguments</b></summary>
@@ -180,14 +191,14 @@ The tests cover output shapes in 1D, 2D and 3D and causality in time: perturbing
 If you use this code, please cite:
 
 ```bibtex
-@article{uflex,
-  title   = {<Paper title>},
-  author  = {<Authors>},
-  journal = {<Venue>},
-  year    = {<Year>}
+@inproceedings{sittoni2026uflex,
+  title     = {Simplifying Transformer-Based U-Net Neural Physics Simulators},
+  author    = {Sittoni, Pietro and Tudisco, Francesco},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026}
 }
 ```
 
 ## Acknowledgements
 
-The data pipelines build on [The Well](https://github.com/PolymathicAI/the_well), [PDEBench](https://github.com/pdebench/PDEBench) and the [DiffusionPDE](https://huggingface.co/datasets/jcy20/DiffusionPDE-normalized) normalized datasets. The conditioning follows the adaLN design of [DiT](https://github.com/facebookresearch/DiT), and rotary embeddings come from [rotary-embedding-torch](https://github.com/lucidrains/rotary-embedding-torch).
+The benchmarks come from [The Well](https://github.com/PolymathicAI/the_well) and [PDEBench](https://github.com/pdebench/PDEBench); the steady-state loaders also support the [DiffusionPDE](https://huggingface.co/datasets/jcy20/DiffusionPDE-normalized) normalized datasets. The conditioning adapts adaLN-Zero from [DiT](https://github.com/facebookresearch/DiT), and rotary embeddings come from [rotary-embedding-torch](https://github.com/lucidrains/rotary-embedding-torch).

@@ -1,6 +1,6 @@
 """Plot an autoregressive rollout of a trained UFlex against the reference trajectory.
 
-    python plot_rollout.py --config configs/planetswe/uflex.yaml \
+    python plot_rollout.py --config configs/planetswe/uflex_b.yaml \
         --checkpoint checkpoints/<run>/model.pt --out rollout.png
 
 For 3D data the middle slice along the second spatial axis is shown.

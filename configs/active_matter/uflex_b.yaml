@@ -1,43 +1,43 @@
-# UFlex · PDEBench · 3D compressible Navier-Stokes, turbulent (64^3, 5 fields)
-#   python train.py --config configs/cns_3d/uflex.yaml
+# UFlex-B · The Well · active_matter (2D, 256x256, 11 fields)
+#   python train.py --config configs/active_matter/uflex_b.yaml
 
 # Experiment
 seed: 42
 device: "cuda:0"
 wandb_project: UFlex
 wandb_entity: null             # your W&B team; null uses your default entity
-tags: [cns_3d]
+tags: [active_matter]
 output_dir: checkpoints        # checkpoints go to <output_dir>/<run name>/
 
 # Data
-dataset_name: "CNS3d"
-data_path: "data/pdebench/3D/Train"
+dataset_name: "active_matter"
+data_path: "data/the_well/datasets"
 input_steps: 1                 # input frames given to the model
-rollout_steps: 20              # length of the evaluation rollout
+rollout_steps: 80              # length of the evaluation rollout
 stride: 1                      # temporal stride between frames
-rollout_error_space: physical  # rollout error on normalized or physical fields
+rollout_error_space: normalized  # rollout error on normalized or physical fields
 
 # Per-channel normalization statistics of the training set
-mean: [6.655383185716346e-05, 3.4500604670029134e-05, -5.5770848121028394e-05, 1.0, 0.8254720568656921]
-std: [0.41698402166366577, 0.4171973466873169, 0.417111873626709, 0.20414811372756958, 0.2756378948688507]
+mean: [1.0, 2.902884963656982e-12, -8.958896818844764e-11, 0.5019016861915588, -0.006248312070965767, -0.006248312070965767, 0.49809831380844116, 2.2169193564236522e-12, -4.510158219117599e-11, -4.510158219117599e-11, -2.2169193564236522e-12]
+std: [0.002970081055536866, 0.5771536827087402, 0.5669324398040771, 0.31998544931411743, 0.33093005418777466, 0.33093005418777466, 0.32003045082092285, 0.4071103036403656, 0.4320834279060364, 0.4320834279060364, 0.4071103036403656]
 log_scale: false               # symmetric log transform after normalization
 
 # Model (keyword arguments of uflex.UFlex; channels and resolution are read from the data)
 model:
-  patch_size: [8, 8, 8]
+  patch_size: [8, 8]
   depth: 2
   depth_res: 2
   depth_middle: 2
-  heads: [6, 8]
-  heads_middle: 12
+  heads: [8, 12]
+  heads_middle: 18
   dim_head: 64
   downsampling_factor: 4
-  num_parameters: 0
+  num_parameters: 3
   dropout: false
   drop_path: 0.0
 
 # Optimization
-epochs: 75
+epochs: 100
 batch_size: 64
 accumulation_steps: 1
 lr: 5.0e-04

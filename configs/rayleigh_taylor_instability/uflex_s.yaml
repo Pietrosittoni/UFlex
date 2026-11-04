@@ -1,0 +1,19 @@
+# UFlex-S · The Well · rayleigh_taylor_instability (3D, 128^3, 4 fields)
+#   python train.py --config configs/rayleigh_taylor_instability/uflex_s.yaml
+# Same data and optimization settings as uflex_b.yaml; only the model size differs.
+
+base_config: uflex_b.yaml
+tags: [rayleigh_taylor_instability, uflex_s]
+
+model:
+  patch_size: [8, 8, 8]
+  depth: 2
+  depth_res: 2
+  depth_middle: 2
+  heads: [6, 8]
+  heads_middle: 12
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 1
+  dropout: false
+  drop_path: 0.0

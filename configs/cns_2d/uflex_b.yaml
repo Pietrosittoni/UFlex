@@ -1,35 +1,30 @@
-# UFlex · PDEBench · 3D compressible Navier-Stokes, fine-tuning with 4 input frames (64^3, 5 fields)
-#   python finetune.py --config configs/cns_3d_finetune/uflex.yaml
+# UFlex-B · PDEBench · 2D compressible Navier-Stokes, turbulent (512x512, 4 fields)
+#   python train.py --config configs/cns_2d/uflex_b.yaml
 
 # Experiment
 seed: 42
 device: "cuda:0"
 wandb_project: UFlex
 wandb_entity: null             # your W&B team; null uses your default entity
-tags: [cns_3d_finetune, finetune]
+tags: [cns_2d]
 output_dir: checkpoints        # checkpoints go to <output_dir>/<run name>/
 
-# Fine-tuning: backbone from a pretrained checkpoint, new patch embedding / output projection
-pretrained_checkpoint: checkpoints/<pretrained-run>/model.pt
-projection_lr: 1.0e-4
-projection_lr_min: 1.0e-5
-
 # Data
-dataset_name: "CNS3d"
-data_path: "data/pdebench/3D/Train"
-input_steps: 4                 # input frames given to the model
-rollout_steps: 17              # length of the evaluation rollout
+dataset_name: "CNS2d"
+data_path: "data/pdebench/2D/CFD/2D_Train_Turb"
+input_steps: 1                 # input frames given to the model
+rollout_steps: 20              # length of the evaluation rollout
 stride: 1                      # temporal stride between frames
-rollout_error_space: physical  # rollout error on normalized or physical fields
+rollout_error_space: normalized  # rollout error on normalized or physical fields
 
 # Per-channel normalization statistics of the training set
-mean: [0.000782568589784205, -0.0015041523147374392, 0.12451086938381195, 4.9097208976745605, 27.693815231323242]
-std: [0.6050273776054382, 0.6062456369400024, 0.6269024610519409, 3.03236722946167, 26.608625411987305]
+mean: [-0.00042641, 2.031e-05, 1.0, 31.035]
+std: [0.7304, 0.7303, 0.2617, 29.6706]
 log_scale: false               # symmetric log transform after normalization
 
 # Model (keyword arguments of uflex.UFlex; channels and resolution are read from the data)
 model:
-  patch_size: [8, 8, 8]
+  patch_size: [8, 8]
   depth: 2
   depth_res: 2
   depth_middle: 2
@@ -37,11 +32,9 @@ model:
   heads_middle: 18
   dim_head: 64
   downsampling_factor: 4
-  num_parameters: 0
-  time_patch_size: 2
+  num_parameters: 1
   dropout: false
   drop_path: 0.0
-  normalize_input: true
 
 # Optimization
 epochs: 10

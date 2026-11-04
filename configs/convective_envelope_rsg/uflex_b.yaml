@@ -1,5 +1,5 @@
-# UFlex · The Well · convective_envelope_rsg (3D, 256x128x256, 6 fields)
-#   python train.py --config configs/convective_envelope_rsg/uflex.yaml
+# UFlex-B · The Well · convective_envelope_rsg (3D, 256x128x256, 6 fields)
+#   python train.py --config configs/convective_envelope_rsg/uflex_b.yaml
 
 # Experiment
 seed: 42
@@ -28,8 +28,8 @@ model:
   depth: 2
   depth_res: 2
   depth_middle: 2
-  heads: [6, 8]
-  heads_middle: 12
+  heads: [8, 12]
+  heads_middle: 18
   dim_head: 64
   downsampling_factor: 4
   num_parameters: 0

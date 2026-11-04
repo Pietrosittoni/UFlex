@@ -1,0 +1,20 @@
+# UFlex-L · PDEBench · 3D compressible Navier-Stokes, turbulent (64^3, 5 fields)
+#   python train.py --config configs/cns_3d/uflex_l.yaml
+# Same data and optimization settings as uflex_b.yaml; only the model size differs.
+
+base_config: uflex_b.yaml
+tags: [cns_3d, uflex_l]
+
+model:
+  patch_size: [8, 8, 8]
+  depth: 2
+  depth_res: 3
+  depth_middle: 4
+  heads: [12, 16]
+  heads_middle: 24
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 0
+  time_patch_size: 2
+  dropout: false
+  drop_path: 0.0
