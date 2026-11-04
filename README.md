@@ -81,8 +81,8 @@ next_frame = model(x, params)            # (2, 1, 256, 256, 4)
 
 | Size | `heads` | `heads_middle` | `depth_res` | `depth_middle` | Parameters |
 |---|---|---|---|---|---|
-| UFlex-S | `[6, 8]` | 12 | 2 | 2 | 58M |
-| UFlex-B (default) | `[8, 12]` | 18 | 2 | 2 | 124M |
+| UFlex-S | `[6, 8]` | 12 | 2 | 2 | 57M |
+| UFlex-B (default) | `[8, 12]` | 18 | 2 | 2 | 123M |
 | UFlex-L | `[12, 16]` | 24 | 3 | 4 | 374M |
 
 Each spatial size must be divisible by the patch size, and the patches per frame must be divisible by `downsampling_factor ** depth`. All arguments are documented in [`uflex/model.py`](uflex/model.py).
