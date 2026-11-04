@@ -1,18 +1,18 @@
-# UFlex-B · The Well · active_matter, steady-state task: u(0) -> u(horizon)
-#   python train_steady_state.py --config configs/active_matter_steady/uflex_b.yaml
+# UFlex-B · The Well · active_matter, static prediction: u(0) -> u(horizon)
+#   python train_static.py --config configs/active_matter_static/uflex_b.yaml
 
 # Experiment
 seed: 40
 device: "cuda:0"
 wandb_project: UFlex
 wandb_entity: null             # your W&B team; null uses your default entity
-tags: [active_matter, steady_state]
+tags: [active_matter, static]
 output_dir: checkpoints        # checkpoints go to <output_dir>/<run name>/
 
 # Data
 dataset_name: "active_matter"
 data_path: "data/the_well/datasets"
-input_steps: 1                 # input frames given to the model
+input_steps: 1                 # the initial condition only
 horizon: 10                    # target is the state `horizon` steps after the input
 stride: 1                      # temporal stride between frames
 

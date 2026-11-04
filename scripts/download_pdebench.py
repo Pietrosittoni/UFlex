@@ -1,109 +1,58 @@
-"""Download PDEBench datasets (adapted from the PDEBench repository).
+"""Download the PDEBench compressible Navier–Stokes files used in the paper.
 
-    python scripts/download_pdebench.py --root_folder data/pdebench --pde_name 2d_cfd --pde_name 3d_cfd
+    python scripts/download_pdebench.py --root data/pdebench              # CNS-2D and CNS-3D
+    python scripts/download_pdebench.py --root data/pdebench --dataset cns_3d
 
-Files land in <root_folder>/<path from pdebench_data_urls.csv>, e.g. data/pdebench/2D/CFD/2D_Train_Turb/.
+Files land where the configs expect them:
+    <root>/2D/CFD/2D_Train_Turb/   CNS-2D, 512 x 512, Mach 0.1 and 1.0
+    <root>/3D/Train/               CNS-3D, Mach 1.0
 """
 
-from __future__ import annotations
-
 import argparse
-from pathlib import Path
+import hashlib
+import os
+import urllib.request
 
-import pandas as pd
-from torchvision.datasets.utils import download_url
-from tqdm import tqdm
+DARUS = "https://darus.uni-stuttgart.de/api/access/datafile/"
 
-
-def parse_metadata(pde_names):
-    """
-    This function parses the argument to filter the metadata of files that need to be downloaded.
-
-    Args:
-    pde_names: List containing the name of the PDE to be downloaded
-    df      : The provided dataframe loaded from the csv file
-
-    Options for pde_names:
-    - Advection
-    - Burgers
-    - 1D_CFD
-    - Diff-Sorp
-    - 1D_ReacDiff
-    - 2D_CFD
-    - Darcy
-    - 2D_ReacDiff
-    - NS_Incom
-    - SWE
-    - 3D_CFD
-
-    Returns:
-    pde_df : Filtered dataframe containing metadata of files to be downloaded
-    """
-
-    meta_df = pd.read_csv(Path(__file__).with_name("pdebench_data_urls.csv"))
-
-    # Ensure the pde_name is defined
-    pde_list = [
-        "advection",
-        "burgers",
-        "1d_cfd",
-        "diff_sorp",
-        "1d_reacdiff",
-        "2d_cfd",
-        "darcy",
-        "2d_reacdiff",
-        "ns_incom",
-        "swe",
-        "3d_cfd",
-    ]
-
-    assert all(name.lower() in pde_list for name in pde_names), "PDE name not defined."
-
-    # Filter the files to be downloaded
-    meta_df["PDE"] = meta_df["PDE"].str.lower()
-
-    return meta_df[meta_df["PDE"].isin(pde_names)]
+# dataset -> [(directory, file name, DaRUS file id, md5)]
+FILES = {
+    "cns_2d": [
+        ("2D/CFD/2D_Train_Turb", "2D_CFD_Turb_M0.1_Eta1e-08_Zeta1e-08_periodic_512_Train.hdf5", 164685, "844555000d342d2947162c6cf46798e7"),
+        ("2D/CFD/2D_Train_Turb", "2D_CFD_Turb_M1.0_Eta1e-08_Zeta1e-08_periodic_512_Train.hdf5", 164686, "3f2c7376cde5fb072db0f9814f1c6992"),
+    ],
+    "cns_3d": [
+        ("3D/Train", "3D_CFD_Turb_M1.0_Eta1e-08_Zeta1e-08_periodic_Train.hdf5", 164694, "4f0eacaec5ff000bbd9a31026ea207b8"),
+    ],
+}
 
 
-def download_data(root_folder, pde_name):
-    """ "
-    Download data splits specific to a given PDE.
+def md5sum(path: str, chunk_size: int = 1 << 24) -> str:
+    digest = hashlib.md5()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
-    Args:
-    root_folder: The root folder where the data will be downloaded
-    pde_name   : The name of the PDE for which the data to be downloaded
-    """
 
-    # print(f"Downloading data for {pde_name} ...")
-
-    # Load and parse metadata csv file
-    pde_df = parse_metadata(pde_name)
-
-    # Iterate filtered dataframe and download the files
-    for _, row in tqdm(pde_df.iterrows(), total=pde_df.shape[0]):
-        file_path = Path(root_folder) / row["Path"]
-        download_url(row["URL"], file_path, row["Filename"], md5=row["MD5"])
+def download(root: str, directory: str, filename: str, file_id: int, md5: str) -> None:
+    path = os.path.join(root, directory, filename)
+    if os.path.exists(path) and md5sum(path) == md5:
+        print(f"{path} already downloaded")
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    print(f"Downloading {filename} ...")
+    urllib.request.urlretrieve(DARUS + str(file_id), path)
+    if md5sum(path) != md5:
+        raise RuntimeError(f"Checksum mismatch for {path}; delete it and retry")
 
 
 if __name__ == "__main__":
-    arg_parser = argparse.ArgumentParser(
-        prog="Download Script",
-        description="Helper script to download the PDEBench datasets",
-        epilog="",
-    )
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--root", default="data/pdebench", help="Output directory.")
+    parser.add_argument("--dataset", nargs="+", choices=sorted(FILES), default=sorted(FILES))
+    args = parser.parse_args()
 
-    arg_parser.add_argument(
-        "--root_folder",
-        type=str,
-        required=True,
-        help="Root folder where the data will be downloaded",
-    )
-    arg_parser.add_argument(
-        "--pde_name",
-        action="append",
-        help="Name of the PDE dataset to download. You can use this flag multiple times to download multiple datasets",
-    )
-
-    args = arg_parser.parse_args()
-
-    download_data(args.root_folder, args.pde_name)
+    for name in args.dataset:
+        for entry in FILES[name]:
+            download(args.root, *entry)

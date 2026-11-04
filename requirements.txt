@@ -9,14 +9,8 @@ pyyaml>=6.0
 numpy>=1.24
 h5py>=3.8
 the_well>=1.0
-datasets>=2.14
 wandb>=0.16
 matplotlib>=3.7
-
-# Data download (scripts/download_pdebench.py)
-pandas>=2.0
-torchvision>=0.16
-tqdm>=4.65
 
 # Tests
 pytest>=7.0

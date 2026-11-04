@@ -6,7 +6,7 @@
 *NeurIPS 2026* · [Citation](#citation)
 <!-- TODO: add the arXiv / OpenReview link once available. -->
 
-Official PyTorch implementation of **UFlex**, an attention-based U-Net that operates on a 1D token sequence. The same model handles 1D, 2D, 3D and spatiotemporal regular-grid problems.
+Official PyTorch implementation of **UFlex**, an attention-based U-Net that operates on a 1D token sequence. The same model handles 2D, 3D and spatiotemporal regular-grid problems.
 
 <p align="center">
   <img src="assets/uflex_architecture.png" width="100%" alt="UFlex architecture">
@@ -37,10 +37,7 @@ Configs read data from `data_path`, under `data/` by default.
 the-well-download --base-path data/the_well --dataset active_matter
 
 # PDEBench: 2D and 3D compressible Navier–Stokes
-python scripts/download_pdebench.py --root_folder data/pdebench --pde_name 2d_cfd --pde_name 3d_cfd
-
-# DiffusionPDE: static problems (darcy, helmholtz, ...)
-scripts/download_diffusionpde.sh data/diffusionpde darcy helmholtz
+python scripts/download_pdebench.py --root data/pdebench
 ```
 
 ## Training
@@ -55,8 +52,8 @@ python train.py --config configs/active_matter/uflex_b.yaml
 # 2D -> 3D transfer: fine-tune a pretrained backbone (set pretrained_checkpoint in the config)
 python finetune.py --config configs/cns_3d_finetune/uflex_b.yaml
 
-# Static prediction: initial condition -> state after `horizon` steps
-python train_steady_state.py --config configs/active_matter_steady/uflex_b.yaml
+# Static prediction: active_matter state 10 steps after the initial condition
+python train_static.py --config configs/active_matter_static/uflex_b.yaml
 ```
 
 ## Evaluation
@@ -106,4 +103,4 @@ pytest tests
 
 ## Acknowledgements
 
-Data from [The Well](https://github.com/PolymathicAI/the_well), [PDEBench](https://github.com/pdebench/PDEBench) and [DiffusionPDE](https://huggingface.co/datasets/jcy20/DiffusionPDE-normalized). Conditioning adapted from [DiT](https://github.com/facebookresearch/DiT); rotary embeddings from [rotary-embedding-torch](https://github.com/lucidrains/rotary-embedding-torch).
+Data from [The Well](https://github.com/PolymathicAI/the_well) and [PDEBench](https://github.com/pdebench/PDEBench). Conditioning adapted from [DiT](https://github.com/facebookresearch/DiT); rotary embeddings from [rotary-embedding-torch](https://github.com/lucidrains/rotary-embedding-torch).
