@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Experiments
+wandb/
+checkpoints/
+data/
+*.pt
+rollout*.png
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store

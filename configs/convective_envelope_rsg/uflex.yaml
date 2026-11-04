@@ -1,0 +1,52 @@
+# UFlex · The Well · convective_envelope_rsg (3D, 256x128x256, 6 fields)
+#   python train.py --config configs/convective_envelope_rsg/uflex.yaml
+
+# Experiment
+seed: 42
+device: "cuda:0"
+wandb_project: UFlex
+wandb_entity: null             # your W&B team; null uses your default entity
+tags: [convective_envelope_rsg]
+output_dir: checkpoints        # checkpoints go to <output_dir>/<run name>/
+
+# Data
+dataset_name: "convective_envelope_rsg"
+data_path: "data/the_well/datasets"
+input_steps: 1                 # input frames given to the model
+rollout_steps: 99              # length of the evaluation rollout
+stride: 1                      # temporal stride between frames
+rollout_error_space: physical  # rollout error on normalized or physical fields
+
+# Per-channel normalization statistics of the training set
+mean: [0.11872373521327972, 0.13028374314308167, 0.07412692904472351, -0.424262136220932, -0.008962799794971943, -8.363740926142782e-05]
+std: [0.4553830623626709, 0.3817763328552246, 0.19350679218769073, 0.5448189973831177, 0.1572919487953186, 0.14874714612960815]
+log_scale: false               # symmetric log transform after normalization
+
+# Model (keyword arguments of uflex.UFlex; channels and resolution are read from the data)
+model:
+  patch_size: [16, 8, 16]
+  depth: 2
+  depth_res: 2
+  depth_middle: 2
+  heads: [6, 8]
+  heads_middle: 12
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 0
+  dropout: false
+  drop_path: 0.0
+
+# Optimization
+epochs: 50
+batch_size: 16
+accumulation_steps: 2
+lr: 5.0e-04
+learning_rate_min: 1.0e-06
+weight_decay: 0.0
+warmup_steps: 1000
+beta1: 0.9
+beta2: 0.95
+mixed_precision: true          # bfloat16 autocast
+compile: false
+ema_decay: 0.998               # null disables the weight EMA
+val_interval: 1                # validate every N epochs

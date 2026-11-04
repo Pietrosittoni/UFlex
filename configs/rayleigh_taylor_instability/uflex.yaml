@@ -1,0 +1,52 @@
+# UFlex · The Well · rayleigh_taylor_instability (3D, 128^3, 4 fields)
+#   python train.py --config configs/rayleigh_taylor_instability/uflex.yaml
+
+# Experiment
+seed: 42
+device: "cuda:0"
+wandb_project: UFlex
+wandb_entity: null             # your W&B team; null uses your default entity
+tags: [rayleigh_taylor_instability]
+output_dir: checkpoints        # checkpoints go to <output_dir>/<run name>/
+
+# Data
+dataset_name: "rayleigh_taylor_instability"
+data_path: "data/the_well/datasets"
+input_steps: 1                 # input frames given to the model
+rollout_steps: 118             # length of the evaluation rollout
+stride: 1                      # temporal stride between frames
+rollout_error_space: physical  # rollout error on normalized or physical fields
+
+# Per-channel normalization statistics of the training set
+mean: [0.7729642391204834, -6.989461326156743e-06, -2.0385428797453642e-05, -4.467498911253642e-06]
+std: [0.2685154676437378, 0.008373175747692585, 0.008296072483062744, 0.014173857867717743]
+log_scale: false               # symmetric log transform after normalization
+
+# Model (keyword arguments of uflex.UFlex; channels and resolution are read from the data)
+model:
+  patch_size: [8, 8, 8]
+  depth: 2
+  depth_res: 2
+  depth_middle: 2
+  heads: [6, 8]
+  heads_middle: 12
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 1
+  dropout: false
+  drop_path: 0.0
+
+# Optimization
+epochs: 50
+batch_size: 16
+accumulation_steps: 2
+lr: 5.0e-04
+learning_rate_min: 1.0e-06
+weight_decay: 0.0
+warmup_steps: 1000
+beta1: 0.9
+beta2: 0.95
+mixed_precision: true          # bfloat16 autocast
+compile: false
+ema_decay: 0.998               # null disables the weight EMA
+val_interval: 1                # validate every N epochs

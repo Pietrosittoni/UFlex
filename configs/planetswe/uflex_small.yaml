@@ -1,0 +1,52 @@
+# UFlex · The Well · planetswe (2D, 256x512, 3 fields) · small model
+#   python train.py --config configs/planetswe/uflex_small.yaml
+
+# Experiment
+seed: 42
+device: "cuda:0"
+wandb_project: UFlex
+wandb_entity: null             # your W&B team; null uses your default entity
+tags: [planetswe]
+output_dir: checkpoints        # checkpoints go to <output_dir>/<run name>/
+
+# Data
+dataset_name: "planetswe"
+data_path: "data/the_well/datasets"
+input_steps: 1                 # input frames given to the model
+rollout_steps: 200             # length of the evaluation rollout
+stride: 5                      # temporal stride between frames
+rollout_error_space: normalized  # rollout error on normalized or physical fields
+
+# Per-channel normalization statistics of the training set
+mean: [-73.223, -0.0070098, 0.87755]
+std: [305.509, 6.912, 13.637]
+log_scale: true                # symmetric log transform after normalization
+
+# Model (keyword arguments of uflex.UFlex; channels and resolution are read from the data)
+model:
+  patch_size: [8, 8]
+  depth: 2
+  depth_res: 2
+  depth_middle: 2
+  heads: [4, 8]
+  heads_middle: 12
+  dim_head: 64
+  downsampling_factor: 4
+  num_parameters: 0
+  dropout: false
+  drop_path: 0.0
+
+# Optimization
+epochs: 5
+batch_size: 32
+accumulation_steps: 1
+lr: 5.0e-04
+learning_rate_min: 1.0e-06
+weight_decay: 0.0
+warmup_steps: 1000
+beta1: 0.9
+beta2: 0.95
+mixed_precision: true          # bfloat16 autocast
+compile: false
+ema_decay: 0.998               # null disables the weight EMA
+val_interval: 1                # validate every N epochs
