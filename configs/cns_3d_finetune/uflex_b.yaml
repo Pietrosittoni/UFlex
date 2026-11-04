@@ -41,7 +41,6 @@ model:
   time_patch_size: 2
   dropout: false
   drop_path: 0.0
-  normalize_input: true
 
 # Optimization
 epochs: 10

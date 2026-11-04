@@ -104,16 +104,6 @@ def test_conditioning_on_physical_parameters():
     assert not torch.allclose(a, b)
 
 
-def test_normalize_input_is_scale_equivariant():
-    """With per-sample standardization, scaling and shifting the input does the same to the output."""
-    model = UFlex(in_channels=3, patch_size=(8, 8), normalize_input=True, **SMALL).eval()
-    x, parameters = torch.randn(1, 2, 64, 64, 3), torch.ones(1, 1)
-    with torch.no_grad():
-        y = model(x, parameters)
-        y_scaled = model(3.0 * x + 2.0, parameters)
-    torch.testing.assert_close(y_scaled, 3.0 * y + 2.0, rtol=1e-3, atol=1e-3)
-
-
 @pytest.mark.parametrize("shape, message", [
     ((2, 1, 60, 64, 3), "divisible by patch_size"),
     ((2, 1, 64, 64, 4), "input channels"),

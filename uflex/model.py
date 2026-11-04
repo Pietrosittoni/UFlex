@@ -73,8 +73,6 @@ class UFlex(nn.Module):
             With 0, the model expects a dummy tensor of ones of shape (B, 1).
         dropout: Enable dropout (p = 0.1) in attention and feed-forward layers.
         drop_path: Maximum stochastic-depth rate inside each transformer stage.
-        normalize_input: Standardize each sample (per channel, over time and space) before
-            the network and undo it on the output.
     """
 
     def __init__(
@@ -93,7 +91,6 @@ class UFlex(nn.Module):
         num_parameters: int = 0,
         dropout: bool = False,
         drop_path: float = 0.0,
-        normalize_input: bool = False,
     ):
         super().__init__()
         if len(heads) != depth:
@@ -107,7 +104,6 @@ class UFlex(nn.Module):
         self.time_patch_size = time_patch_size
         self.depth = depth
         self.downsampling_factor = downsampling_factor
-        self.normalize_input = normalize_input
 
         # Token width at every level, finest to coarsest, plus the middle stage.
         self.level_dims = [h * dim_head for h in heads]
@@ -183,9 +179,6 @@ class UFlex(nn.Module):
         """
         self._check_input(x)
 
-        if self.normalize_input:
-            x, mean, std = self._standardize(x)
-
         tokens, grid = self._patchify(x)
         num_frames = grid[0]
         tokens = self.embed_norm(self.lift_conv(self.patch_norm(tokens)))
@@ -195,11 +188,7 @@ class UFlex(nn.Module):
         tokens = self.middle_block(tokens, condition, num_frames)
         tokens = self._decode(tokens, condition, skips, num_frames)
 
-        out = self._unpatchify(self.proj(tokens), grid)
-
-        if self.normalize_input:
-            out = out * std + mean
-        return out
+        return self._unpatchify(self.proj(tokens), grid)
 
     def _embed_parameters(self, parameters: torch.Tensor) -> torch.Tensor:
         """Sum the embeddings of every physical parameter: (B, num_parameters) -> (B, dim_0)."""
@@ -287,11 +276,3 @@ class UFlex(nn.Module):
                 f"Each frame has {patches_per_frame} patches, which must be divisible by "
                 f"downsampling_factor**depth = {self.downsampling_factor**self.depth}"
             )
-
-    @staticmethod
-    def _standardize(x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Standardize each sample per channel over time and space."""
-        dims = tuple(range(1, x.ndim - 1))
-        mean = x.mean(dim=dims, keepdim=True)
-        std = x.std(dim=dims, keepdim=True) + 1e-6
-        return (x - mean) / std, mean, std
