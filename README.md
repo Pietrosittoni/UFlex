@@ -30,38 +30,43 @@ Tested with Python 3.11, PyTorch 2.7 and CUDA 12.6.
 
 ## Data
 
-Configs read data from `data_path`, under `data/` by default.
+| Config | Dataset | Resolution | Source |
+|---|---|---|---|
+| `active_matter` | Active Matter (AM) | 256 × 256 | The Well |
+| `planetswe` | Planetswe (PSWE) | 256 × 512 | The Well |
+| `viscoelastic_instability` | Viscoelastic Instability (VI) | 512 × 512 | The Well |
+| `cns_2d` | Compressible Navier–Stokes (CNS) | 512 × 512 | PDEBench |
+| `cns_3d` | Compressible Navier–Stokes (CNS) | 64³ | PDEBench |
+| `rayleigh_taylor_instability` | Rayleigh–Taylor Instability (RTI) | 128³ | The Well |
+| `convective_envelope_rsg` | Convective Envelope RSG (CE-RGS) | 256 × 128 × 256 | The Well |
+
+Configs read the data from `data_path`, which points under `data/` by default:
 
 ```bash
-# The Well: active_matter, planetswe, viscoelastic_instability, rayleigh_taylor_instability, convective_envelope_rsg
+# The Well (one dataset at a time; the 3D ones are several hundred GB)
 the-well-download --base-path data/the_well --dataset active_matter
 
-# PDEBench: 2D and 3D compressible Navier–Stokes
-python scripts/download_pdebench.py --root data/pdebench
+# PDEBench
+DARUS=https://darus.uni-stuttgart.de/api/access/datafile
+CNS2D=data/pdebench/2D/CFD/2D_Train_Turb
+curl -L --create-dirs -o $CNS2D/2D_CFD_Turb_M0.1_Eta1e-08_Zeta1e-08_periodic_512_Train.hdf5 $DARUS/164685
+curl -L --create-dirs -o $CNS2D/2D_CFD_Turb_M1.0_Eta1e-08_Zeta1e-08_periodic_512_Train.hdf5 $DARUS/164686
+curl -L --create-dirs -o data/pdebench/3D/Train/3D_CFD_Turb_M1.0_Eta1e-08_Zeta1e-08_periodic_Train.hdf5 $DARUS/164694
 ```
 
-## Training
+## Experiments
 
-```bash
-python train.py --config configs/active_matter/uflex_b.yaml
-```
+| Experiment | Command |
+|---|---|
+| Main results and model scaling | `python train.py --config configs/<dataset>/uflex_{s,b,l}.yaml` |
+| Transfer from 2D to 3D | `python finetune.py --config configs/cns_3d_finetune/uflex_b.yaml` |
+| Static prediction | `python train_static.py --config configs/active_matter_static/uflex_b.yaml` |
 
-`configs/<benchmark>/` contains `uflex_s.yaml`, `uflex_b.yaml` and `uflex_l.yaml`. The benchmarks are `active_matter`, `planetswe`, `viscoelastic_instability`, `cns_2d`, `cns_3d`, `rayleigh_taylor_instability` and `convective_envelope_rsg`. After training, `train.py` evaluates autoregressive rollouts on the test set and saves `checkpoints/<run>/model.pt`. Logging uses Weights & Biases; set `WANDB_MODE=disabled` to turn it off.
+- `train.py` trains with one-step teacher forcing, then evaluates autoregressive rollouts on the test set and reports TE at 30, 45, 60, 75, 90 and 100% of the horizon.
+- `finetune.py` initializes the backbone from a 2D checkpoint; set `pretrained_checkpoint` in the config.
+- `train_static.py` predicts the 10th time step of Active Matter directly from the initial condition.
 
-```bash
-# 2D -> 3D transfer: fine-tune a pretrained backbone (set pretrained_checkpoint in the config)
-python finetune.py --config configs/cns_3d_finetune/uflex_b.yaml
-
-# Static prediction: active_matter state 10 steps after the initial condition
-python train_static.py --config configs/active_matter_static/uflex_b.yaml
-```
-
-## Evaluation
-
-```bash
-python plot_rollout.py --config configs/planetswe/uflex_b.yaml --checkpoint checkpoints/<run>/model.pt
-python benchmark.py --config configs/active_matter/uflex_b.yaml --input-shape 1 256 256 11
-```
+Checkpoints are saved to `checkpoints/<run>/` together with the config. Use `--device cuda:1` to pick a GPU. Logging uses Weights & Biases; set `WANDB_MODE=disabled` to turn it off.
 
 ## Usage
 
@@ -83,12 +88,6 @@ next_frame = model(x, params)            # (2, 1, 256, 256, 4)
 | UFlex-L | `[12, 16]` | 24 | 3 | 4 | 374M |
 
 Each spatial size must be divisible by the patch size, and the patches per frame must be divisible by `downsampling_factor ** depth`. All arguments are documented in [`uflex/model.py`](uflex/model.py).
-
-## Tests
-
-```bash
-pytest tests
-```
 
 ## Citation
 
